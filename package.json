@@ -1,5 +1,5 @@
 {
-  "name": "openai-gpt-server",
+  "name": "rekindle",
   "version": "1.0.0",
   "description": "A server for handling GPT-3 requests",
   "main": "server.js",
