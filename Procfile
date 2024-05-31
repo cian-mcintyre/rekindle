@@ -1,2 +1,2 @@
-web: node openai-gpt-server/server.js
+web: node server.js
 
