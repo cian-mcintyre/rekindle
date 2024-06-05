@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -9,6 +10,9 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000; // Use the PORT environment variable set by Heroku, or default to 3000 for local development
+
+// Log the API key for debugging purposes
+console.log('OpenAI API Key:', process.env.OPENAI_API_KEY);  // Remove or comment out this line in production
 
 app.use(express.json());
 app.use(cors()); // Enable CORS for all routes
