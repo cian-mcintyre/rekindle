@@ -47,7 +47,8 @@ function startVoiceChat() {
 }
 
 function getGPTResponse(text) {
-    const apiEndpoint = '/api/gpt'; // Request to your own server
+    const apiEndpoint = 'http://localhost:3000/api/gpt'; // Ensure this points to your local server running your Node.js app
+
     console.log('Sending request to GPT API with text:', text);
 
     axios.post(apiEndpoint, { input: text })
@@ -71,6 +72,7 @@ function getGPTResponse(text) {
             icon.style.display = 'block';
         });
 }
+
 
 function speakResponse(text) {
     const synth = window.speechSynthesis;
