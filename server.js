@@ -26,6 +26,10 @@ app.post('/api/gpt', async (req, res) => {
     const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
     const userMessage = req.body.input;
 
+    if (!userMessage) {
+        return res.status(400).send({ error: 'Input text is required' });
+    }
+
     console.log('Received message:', userMessage);
 
     try {
@@ -46,9 +50,9 @@ app.post('/api/gpt', async (req, res) => {
 
         res.json({ output: response.data.choices[0].message.content });
     } catch (error) {
+        console.error('Error interacting with GPT API:', error);
         if (error.response) {
-            console.error('Error status:', error.response.status);
-            console.error('Error data:', error.response.data);
+            console.error('Error response data:', error.response.data);
             res.status(error.response.status).send(error.response.data);
         } else if (error.request) {
             console.error('Error request:', error.request);
