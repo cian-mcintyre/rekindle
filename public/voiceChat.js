@@ -47,7 +47,7 @@ function startVoiceChat() {
 }
 
 function getGPTResponse(text) {
-    const apiEndpoint = 'http://localhost:3000/api/gpt'; // Ensure this points to your local server running your Node.js app
+    const apiEndpoint = '/api/gpt'; // Use relative URL
 
     console.log('Sending request to GPT API with text:', text);
 
@@ -72,6 +72,7 @@ function getGPTResponse(text) {
             icon.style.display = 'block';
         });
 }
+
 
 
 function speakResponse(text) {
