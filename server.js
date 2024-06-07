@@ -1,6 +1,5 @@
-// server.js
 const express = require('express');
-const axios = require('axios');
+const fetch = require('node-fetch'); // This will use node-fetch v2
 const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
@@ -10,9 +9,6 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000; // Use the PORT environment variable set by Heroku, or default to 3000 for local development
-
-// Log the API key for debugging purposes
-console.log('OpenAI API Key:', process.env.OPENAI_API_KEY);  // Remove or comment out this line in production
 
 app.use(express.json());
 app.use(cors()); // Enable CORS for all routes
@@ -37,31 +33,45 @@ app.post('/api/gpt', async (req, res) => {
     console.log('Received message:', userMessage);
 
     try {
-        const response = await axios.post(apiEndpoint, {
-            model: "gpt-4",
-            messages: [
-                { role: "system", content: "You are a helpful assistant." },
-                { role: "user", content: userMessage }
-            ]
-        }, {
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`
-            }
+            },
+            body: JSON.stringify({
+                model: "gpt-4",
+                messages: [
+                    { role: "system", content: "You are a helpful assistant." },
+                    { role: "user", content: userMessage }
+                ]
+            })
         });
 
-        console.log('GPT response data:', response.data);
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Error response data:', errorData);
+            return res.status(response.status).send(errorData);
+        }
 
-        res.json({ output: response.data.choices[0].message.content });
+        const responseData = await response.json();
+        console.log('GPT response data:', responseData);
+
+        res.json({ output: responseData.choices[0].message.content });
     } catch (error) {
         console.error('Error interacting with GPT API:', error);
+
         if (error.response) {
-            console.error('Error response data:', error.response.data);
+            // Detailed error from the response
+            console.error('Response status:', error.response.status);
+            console.error('Response data:', error.response.data);
             res.status(error.response.status).send(error.response.data);
         } else if (error.request) {
-            console.error('Error request:', error.request);
+            // No response received
+            console.error('Request made, no response received:', error.request);
             res.status(500).send('No response received from GPT API');
         } else {
+            // Other errors
             console.error('Error message:', error.message);
             res.status(500).send(error.message);
         }
