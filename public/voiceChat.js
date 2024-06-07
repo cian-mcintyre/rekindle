@@ -1,109 +1,53 @@
-document.getElementById('activateVoiceChat').addEventListener('click', function() {
-    startVoiceChat();
-});
+const fetch = require('node-fetch');
+const dotenv = require('dotenv');
 
-function startVoiceChat() {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+// Load environment variables from .env file
+dotenv.config();
 
-    const button = document.getElementById('activateVoiceChat');
-    const icon = button.querySelector('.icon');
-    icon.style.display = 'none';
+module.exports = async (req, res) => {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Only POST requests are allowed' });
+    }
 
-    const loader = document.createElement('div');
-    loader.className = 'loader';
-    button.appendChild(loader);
+    const apiKey = process.env.OPENAI_API_KEY;
+    const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
+    const userMessage = req.body.input;
 
-    recognition.start();
+    if (!userMessage) {
+        return res.status(400).json({ error: 'Input text is required' });
+    }
 
-    recognition.onstart = function() {
-        console.log('Speech recognition service has started');
-    };
+    console.log('Received message:', userMessage);
 
-    recognition.onresult = function(event) {
-        const userText = event.results[0][0].transcript;
-        console.log('Recognized text:', userText);
-        displayUserText(userText); // Display user text in the chat window
-        getGPTResponse(userText);
-        loader.className = 'thinking';
-    };
-
-    recognition.onspeechend = function() {
-        recognition.stop();
-        console.log('Speech recognition service disconnected');
-    };
-
-    recognition.onerror = function(event) {
-        console.error('Speech recognition error detected: ' + event.error);
-        button.removeChild(loader);
-        icon.style.display = 'block';
-    };
-
-    recognition.onend = function() {
-        console.log('Speech recognition service ended');
-    };
-}
-
-function getGPTResponse(text) {
-    const apiEndpoint = '/api/gpt'; // Use relative URL
-
-    console.log('Sending request to GPT API with text:', text);
-
-    axios.post(apiEndpoint, { input: text })
-        .then(response => {
-            console.log('GPT response:', response.data);
-            const gptResponse = response.data.output;
-            displayGPTResponse(gptResponse); // Display GPT response in the chat window
-            speakResponse(gptResponse);
-            const button = document.getElementById('activateVoiceChat');
-            const loader = button.querySelector('.thinking');
-            button.removeChild(loader);
-            const icon = button.querySelector('.icon');
-            icon.style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error interacting with GPT:', error);
-            const button = document.getElementById('activateVoiceChat');
-            const loader = button.querySelector('.thinking');
-            button.removeChild(loader);
-            const icon = button.querySelector('.icon');
-            icon.style.display = 'block';
+    try {
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: "gpt-4",
+                messages: [
+                    { role: "system", content: "You are a helpful assistant." },
+                    { role: "user", content: userMessage }
+                ]
+            })
         });
-}
 
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Error response data:', errorData);
+            return res.status(response.status).json(errorData);
+        }
 
+        const responseData = await response.json();
+        console.log('GPT response data:', responseData);
 
-function speakResponse(text) {
-    const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onstart = function() {
-        console.log('Speech synthesis started');
-    };
-    utterance.onend = function() {
-        console.log('Speech synthesis ended');
-    };
-    utterance.onerror = function(event) {
-        console.error('Speech synthesis error detected: ' + event.error);
-    };
-    synth.speak(utterance);
-}
+        res.status(200).json({ output: responseData.choices[0].message.content });
+    } catch (error) {
+        console.error('Error interacting with GPT API:', error);
 
-function displayUserText(text) {
-    const chatWindow = document.getElementById('chatWindow');
-    const userTextElement = document.createElement('div');
-    userTextElement.className = 'chat-message user-message';
-    userTextElement.innerText = text;
-    chatWindow.appendChild(userTextElement);
-    chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to the bottom
-}
-
-function displayGPTResponse(text) {
-    const chatWindow = document.getElementById('chatWindow');
-    const gptResponseElement = document.createElement('div');
-    gptResponseElement.className = 'chat-message gpt-message';
-    gptResponseElement.innerText = text;
-    chatWindow.appendChild(gptResponseElement);
-    chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to the bottom
-}
+        res.status(500).json({ error: error.message });
+    }
+};
