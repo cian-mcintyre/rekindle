@@ -53,26 +53,40 @@ function getGPTResponse(text) {
 
     console.log('Sending request to GPT API with text:', text);
 
-    axios.post(apiEndpoint, { input: text })
-        .then(response => {
-            console.log('GPT response:', response.data);
-            const gptResponse = response.data.output;
-            displayGPTResponse(gptResponse); // Display GPT response in the chat window
-            speakResponse(gptResponse);
-            const button = document.getElementById('activateVoiceChat');
-            const loader = button.querySelector('.thinking');
-            button.removeChild(loader);
-            const icon = button.querySelector('.icon');
-            icon.style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error interacting with GPT:', error);
-            const button = document.getElementById('activateVoiceChat');
-            const loader = button.querySelector('.thinking');
-            button.removeChild(loader);
-            const icon = button.querySelector('.icon');
-            icon.style.display = 'block';
-        });
+    fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ input: text })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errorData => {
+                throw new Error(errorData.error.message || 'Failed to connect to GPT API');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('GPT response:', data);
+        const gptResponse = data.output;
+        displayGPTResponse(gptResponse); // Display GPT response in the chat window
+        speakResponse(gptResponse);
+        const button = document.getElementById('activateVoiceChat');
+        const loader = button.querySelector('.thinking');
+        button.removeChild(loader);
+        const icon = button.querySelector('.icon');
+        icon.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Error interacting with GPT:', error);
+        const button = document.getElementById('activateVoiceChat');
+        const loader = button.querySelector('.thinking');
+        button.removeChild(loader);
+        const icon = button.querySelector('.icon');
+        icon.style.display = 'block';
+    });
 }
 
 function speakResponse(text) {
