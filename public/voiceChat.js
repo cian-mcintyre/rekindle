@@ -49,7 +49,7 @@ function startVoiceChat() {
 }
 
 function getGPTResponse(text) {
-    const apiEndpoint = '/api/gpt'; // Use relative URL for serverless function
+    const apiEndpoint = '/.netlify/functions/gpt'; // Correct endpoint for Netlify function
 
     console.log('Sending request to GPT API with text:', text);
 
@@ -62,8 +62,10 @@ function getGPTResponse(text) {
     })
     .then(response => {
         if (!response.ok) {
-            return response.json().then(errorData => {
-                throw new Error(errorData.error.message || 'Failed to connect to GPT API');
+            // Handle non-200 responses
+            return response.text().then(text => {
+                console.error('Error response:', text);
+                throw new Error(`HTTP error! status: ${response.status} - ${text}`);
             });
         }
         return response.json();
